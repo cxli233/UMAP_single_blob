@@ -1,0 +1,349 @@
+---
+title: "UMAP"
+author: "Chenxin Li"
+date: "2023-07-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Packages 
+```{r}
+library(tidyverse)
+library(umap)
+library(patchwork)
+library(viridis)
+```
+
+# Normally distributed blob at 50 dims 
+```{r}
+set.seed(666)
+blob_data <- replicate(
+  n = 50, expr = rnorm(5000, mean = 0, sd = 1), simplify = T
+) %>% 
+  as.data.frame()
+
+dim(blob_data)
+head(blob_data)
+```
+
+## UMAP  
+```{r}
+blob_umap <- umap(d = blob_data)
+```
+
+```{r}
+umap_plot <- blob_umap$layout %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = V1, y = V2)) +
+  geom_point(alpha = 0.8) +
+  labs(x = "UMAP1",
+       y = "UMAP2") +
+  theme_bw()
+
+umap_hist1 <- blob_umap$layout %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = V1)) +
+  geom_histogram(bins = 100) +
+  theme_bw()
+
+umap_hist2 <- blob_umap$layout %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = V2)) +
+  geom_histogram(bins = 100) +
+  theme_bw() +
+  theme(axis.text.x = element_blank()) +
+  coord_flip()
+
+panelC <- wrap_plots(umap_hist1, umap_plot, umap_hist2,
+                     design = c("A#
+                                 BC"),
+                     heights = c(0.2, 1),
+                     widths = c(1, 0.2)) 
+
+panelC
+```
+
+
+# Graph 
+```{r}
+dim123 <- blob_data %>% 
+  ggplot(aes(x = V1, y = V2)) +
+  geom_point(alpha = 0.8, aes(color = V3)) +
+  scale_color_gradientn(colors = viridis(10)) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
+hist1 <- blob_data %>% 
+  ggplot(aes(x = V1)) +
+  geom_histogram(bins = 100) +
+  theme_bw() 
+
+hist2 <- blob_data %>% 
+  ggplot(aes(x = V2)) +
+  geom_histogram(bins = 100) +
+  theme_bw() +
+  theme(axis.text.x = element_blank()) +
+  coord_flip()
+
+panelA <- wrap_plots(hist1, dim123, hist2,
+                     design = c("A#
+                                 BC"),
+                     heights = c(0.2, 1),
+                     widths = c(1, 0.2)) 
+
+panelA
+```
+
+```{r}
+dim50 <- blob_data %>% 
+  ggplot(aes(x = V48, y = V49)) +
+  geom_point(alpha = 0.8, aes(color = V50)) +
+  scale_color_gradientn(colors = viridis(10)) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
+hist48 <- blob_data %>% 
+  ggplot(aes(x = V49)) +
+  geom_histogram(bins = 100) +
+  theme_bw()  
+
+hist49 <- blob_data %>% 
+  ggplot(aes(x = V49)) +
+  geom_histogram(bins = 100) +
+  theme_bw() +
+  theme(axis.text.x = element_blank()) +
+  coord_flip()
+
+panelB <- wrap_plots(hist48, dim50, hist49,
+                     design = c("A#
+                                 BC"),
+                     heights = c(0.2, 1),
+                     widths = c(1, 0.2)) 
+
+panelB
+```
+```{r}
+three_dots <- grid::textGrob("...")
+```
+
+```{r}
+wrap_plots(
+  panelA, three_dots, panelB, panelC, nrow = 1,
+  widths = c(1, 0.1, 1, 1)
+) +
+   plot_annotation(title = 
+  "Normally distributed blob of 50 dims reduces to a single blob by UMAP") 
+
+ggsave("UMAP_50dims.svg", height = 4.5, width = 8)
+ggsave("UMAP_50dims.png", height = 4.5, width = 8)
+```
+# how about uniform dist? 
+## Data 
+```{r}
+blob_data_uni <- replicate(
+  n = 50, expr = runif(5000, min = -1, max = 1), simplify = T
+) %>% 
+  as.data.frame()
+
+dim(blob_data_uni)
+head(blob_data_uni)
+```
+
+## UMAP
+```{r}
+blob_uni_umap <- umap(d = blob_data_uni)
+```
+
+```{r}
+umap_plot_u <- blob_uni_umap$layout %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = V1, y = V2)) +
+  geom_point(alpha = 0.8) +
+  labs(x = "UMAP1",
+       y = "UMAP2") +
+  theme_bw()
+
+umap_hist1_u <- blob_uni_umap$layout %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = V1)) +
+  geom_histogram(bins = 100) +
+  theme_bw()
+
+umap_hist2_u <- blob_uni_umap$layout %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = V2)) +
+  geom_histogram(bins = 100) +
+  theme_bw() +
+  theme(axis.text.x = element_blank()) +
+  coord_flip()
+
+panelC_u <- wrap_plots(umap_hist1_u, umap_plot_u, umap_hist2_u,
+                     design = c("A#
+                                 BC"),
+                     heights = c(0.2, 1),
+                     widths = c(1, 0.2)) 
+
+panelC_u
+```
+## Graph
+```{r}
+dim123_u <- blob_data_uni %>% 
+  ggplot(aes(x = V1, y = V2)) +
+  geom_point(alpha = 0.8, aes(color = V3)) +
+  scale_color_gradientn(colors = viridis(10)) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
+hist1_u <- blob_data_uni %>% 
+  ggplot(aes(x = V1)) +
+  geom_histogram(bins = 100) +
+  theme_bw() 
+
+hist2_u <- blob_data_uni %>% 
+  ggplot(aes(x = V2)) +
+  geom_histogram(bins = 100) +
+  theme_bw() +
+  theme(axis.text.x = element_blank()) +
+  coord_flip()
+
+panelA_u <- wrap_plots(hist1_u, dim123_u, hist2_u,
+                     design = c("A#
+                                 BC"),
+                     heights = c(0.2, 1),
+                     widths = c(1, 0.2)) 
+
+panelA_u
+```
+
+```{r}
+dim50_u <- blob_data_uni %>% 
+  ggplot(aes(x = V48, y = V49)) +
+  geom_point(alpha = 0.8, aes(color = V50)) +
+  scale_color_gradientn(colors = viridis(10)) +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
+hist48_u <- blob_data_uni %>% 
+  ggplot(aes(x = V49)) +
+  geom_histogram(bins = 100) +
+  theme_bw()  
+
+hist49_u <- blob_data_uni %>% 
+  ggplot(aes(x = V49)) +
+  geom_histogram(bins = 100) +
+  theme_bw() +
+  theme(axis.text.x = element_blank()) +
+  coord_flip()
+
+panelB_u <- wrap_plots(hist48_u, dim50_u, hist49_u,
+                     design = c("A#
+                                 BC"),
+                     heights = c(0.2, 1),
+                     widths = c(1, 0.2)) 
+  
+panelB_u
+```
+```{r}
+wrap_plots(
+  panelA_u, three_dots, panelB_u, panelC_u, nrow = 1,
+  widths = c(1, 0.1, 1, 1)
+) +
+   plot_annotation(title = 
+  "Uniformly distributed blob of 50 dims reduces to a single blob by UMAP") 
+
+ggsave("UMAP_50dims_u.svg", height = 4.5, width = 8)
+ggsave("UMAP_50dims_u.png", height = 4.5, width = 8)
+```
+
+# How about I PCA and reduce it to 30 dims first? 
+## Normal 
+```{r}
+blob_PCA <- prcomp(blob_data) 
+blob_PCA_umap <- umap(blob_PCA$x[, 1:30])
+```
+
+```{r}
+umap_plot_after_pca <- blob_PCA_umap$layout %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = V1, y = V2)) +
+  geom_point(alpha = 0.8) +
+  labs(x = "UMAP1",
+       y = "UMAP2") +
+  theme_bw()
+
+umap_hist1_after_pca <- blob_PCA_umap$layout %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = V1)) +
+  geom_histogram(bins = 100) +
+  theme_bw()
+
+umap_hist2_after_pca <- blob_PCA_umap$layout %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = V2)) +
+  geom_histogram(bins = 100) +
+  theme_bw() +
+  theme(axis.text.x = element_blank()) +
+  coord_flip()
+
+panelC_after_pca <- wrap_plots(umap_hist1_after_pca, umap_plot_after_pca, umap_hist2_after_pca,
+                     design = c("A#
+                                 BC"),
+                     heights = c(0.2, 1),
+                     widths = c(1, 0.2)) +
+  plot_annotation("UMAP after PCA (single bolb of 50 dims,\nnormally distributed)") 
+
+panelC_after_pca
+
+ggsave("UMAP_50dims_after_PCA.svg", height = 4.5, width = 5)
+ggsave("UMAP_50dims_after_PCA.png", height = 4.5, width = 5)
+```
+
+## Uniform
+```{r}
+blob_PCA_u <- prcomp(blob_data_uni) 
+blob_PCA_u_umap <- umap(blob_PCA_u$x[, 1:30])
+```
+
+```{r}
+umap_plot_u_after_pca <- blob_PCA_u_umap$layout %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = V1, y = V2)) +
+  geom_point(alpha = 0.8) +
+  labs(x = "UMAP1",
+       y = "UMAP2") +
+  theme_bw()
+
+umap_hist1_u_after_pca <- blob_PCA_u_umap$layout %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = V1)) +
+  geom_histogram(bins = 100) +
+  theme_bw()
+
+umap_hist2_u_after_pca <- blob_PCA_u_umap$layout %>% 
+  as.data.frame() %>% 
+  ggplot(aes(x = V2)) +
+  geom_histogram(bins = 100) +
+  theme_bw() +
+  theme(axis.text.x = element_blank()) +
+  coord_flip()
+
+panelC_u_after_pca <- wrap_plots(umap_hist1_u_after_pca, umap_plot_u_after_pca, umap_hist2_u_after_pca,
+                     design = c("A#
+                                 BC"),
+                     heights = c(0.2, 1),
+                     widths = c(1, 0.2)) +
+  plot_annotation("UMAP after PCA (single bolb of 50 dims,\nuniformly distributed)") 
+
+panelC_u_after_pca
+
+ggsave("UMAP_50dims_u_after_PCA.svg", height = 4.5, width = 5)
+ggsave("UMAP_50dims_u_after_PCA.png", height = 4.5, width = 5)
+```
+
