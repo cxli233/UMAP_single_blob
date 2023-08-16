@@ -1,0 +1,270 @@
+---
+title: "UMAP_positive_control"
+author: "Chenxin Li"
+date: "2023-08-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Packages
+```{r}
+library(tidyverse)
+library(patchwork)
+library(umap)
+library(viridis)
+library(RColorBrewer)
+library(rcartocolor)
+```
+# Data
+```{r}
+set.seed(666)
+```
+ 
+## Simulate data 
+```{r}
+dim1 <- c(
+  rnorm(500, mean = 10, sd = 1),
+  rnorm(nrow(my_data) - 500, mean = 0, sd = 0.5)
+)
+
+dim2 <- c(
+  rnorm(500, mean = 0, sd = 0.5),
+  rnorm(400, mean = 9, sd = 0.9),
+  rnorm(nrow(my_data) - 500 - 400, mean = 0, sd = 0.5)
+)
+
+dim3 <- c(
+  rnorm(900, mean = 0, sd = 0.5),
+  rnorm(300, mean = 8, sd = 0.8),
+  rnorm(nrow(my_data) - 900 - 300, mean = 0, sd = 0.5)
+)
+
+dim4 <- c(
+  rnorm(1200, mean = 0, sd = 0.5),
+  rnorm(200, mean = 7, sd = 0.7),
+  rnorm(nrow(my_data) - 1200 - 200, mean = 0, sd = 0.5)
+)
+
+dim5 <- c(
+  rnorm(1400, mean = 0, sd = 0.5),
+  rnorm(100, mean = 6, sd = 0.6),
+  rnorm(nrow(my_data) - 1400 - 100, mean = 0, sd = 0.5)
+)
+
+dim6 <- c(
+  rnorm(1500, mean = 0, sd = 0.5),
+  rnorm(90, mean = 5, sd = 0.5),
+  rnorm(nrow(my_data) - 1500 - 90, mean = 0, sd = 0.5)
+)
+
+dim7 <- c(
+  rnorm(1590, mean = 0, sd = 0.5),
+  rnorm(50, mean = 4, sd = 0.4),
+  rnorm(nrow(my_data) - 1590 - 50, mean = 0, sd = 0.5)
+)
+
+dim8 <- c(
+  rnorm(1640, mean = 0, sd = 0.5),
+  rnorm(10, mean = 3, sd = 0.1)
+  )
+
+```
+
+```{r}
+my_data <- data.frame(
+  index = c(1:500,     # 500, 1 
+            501:900,   # 400, 2 
+            901:1200,  # 300, 3
+            1201:1400, # 200, 4 
+            1401:1500, # 100, 5
+            1501:1590, # 90, 6
+            1591:1640, # 50, 7
+            1641:1650 # 10, 8            
+            )
+) %>% 
+  mutate(group = case_when(
+    index <= 500 ~ 1,
+    index > 500 & index <= 900 ~ 2,
+    index > 900 & index <= 1200 ~ 3,
+    index > 1200 & index <= 1400 ~ 4,
+    index > 1400 & index <= 1500 ~ 5,
+    index > 1500 & index <= 1590 ~ 6,
+    index > 1590 & index <= 1640 ~ 7,
+    index > 1640 & index <= 1650 ~ 8
+  )) %>% 
+  cbind(
+    dim1, dim2, dim3, dim4, 
+    dim5, dim6, dim7, dim8
+  )
+
+head(my_data)
+```
+
+## Heat map of simulated data 
+```{r}
+heatmap_data <- my_data %>% 
+  pivot_longer(cols = !c(index, group), names_to = "dim", values_to = "y") %>% 
+  ggplot(aes(x = dim, y = as.factor(-index))) +
+  geom_tile(aes(fill = y)) +
+  scale_fill_gradientn(colors = c("grey90", carto_pal(7, "SunsetDark"))) +
+  labs(x = "8 dimensions",
+       y = "1650 observations",
+       fill = "value") +
+  theme_classic() +
+  theme(
+    axis.text = element_blank(),
+    legend.key.width = unit(0.8, "lines"),
+    axis.ticks.y = element_blank()
+  )
+```
+
+```{r}
+heatmap_strip <- my_data %>% 
+  ggplot(aes(x = "", y = as.factor(-index))) +
+  geom_tile(aes(fill = as.factor(group))) +
+  scale_fill_manual(values = carto_pal(12, "Pastel")) +
+  labs(x = "group",
+       y = NULL,
+       fill = "group") +
+  theme_classic() +
+  theme(axis.text = element_blank(),
+        legend.key.width = unit(0.8, "lines"),
+        axis.ticks= element_blank(),
+        axis.line = element_blank(),
+        legend.position = "none")
+
+heatmap_data2 <- wrap_plots(
+  heatmap_data +
+    labs(tag = "A"), heatmap_strip,
+  widths = c(1, 0.1),
+  guides = "collect"
+)
+
+heatmap_data2
+```
+
+
+# PCA 
+```{r}
+my_pca <- prcomp(my_data[, 3:10])
+my_pc_importance <- summary(my_pca)$importance
+```
+
+
+## Graph PCA
+```{r}
+pca_12 <- my_pca$x %>% 
+  as.data.frame() %>% 
+  cbind(my_data) %>% 
+  ggplot(aes(x = PC1, y = PC2)) +
+  geom_point(aes(color = as.factor(group)),
+             size = 1.5, alpha = 0.8) +
+  scale_color_manual(values = carto_pal(12, "Pastel")) +
+  labs(x = paste0("PC1: ", signif(my_pc_importance[2, 1]*100, 2), "% variance"),
+       y = paste0("PC2: ", signif(my_pc_importance[2, 2]*100, 2), "% variance"),
+       color = "group") +
+  theme_bw()
+   
+
+pca_12
+```
+```{r}
+pca_23 <- my_pca$x %>% 
+  as.data.frame() %>% 
+  cbind(my_data) %>% 
+  ggplot(aes(x = PC2, y = PC3)) +
+  geom_point(aes(color = as.factor(group)),
+             size = 1.5, alpha = 0.8) +
+  scale_color_manual(values = carto_pal(12, "Pastel")) +
+  labs(x = paste0("PC2: ", signif(my_pc_importance[2, 2]*100, 2), "% variance"),
+       y = paste0("PC3: ", signif(my_pc_importance[2, 3]*100, 2), "% variance"),
+       color = "group") +
+  theme_bw()
+   
+
+pca_23
+```
+
+```{r}
+pca_34 <- my_pca$x %>% 
+  as.data.frame() %>% 
+  cbind(my_data) %>% 
+  ggplot(aes(x = PC3, y = PC4)) +
+  geom_point(aes(color = as.factor(group)),
+             size = 1.5, alpha = 0.8) +
+  scale_color_manual(values = carto_pal(12, "Pastel")) +
+  labs(x = paste0("PC3: ", signif(my_pc_importance[2, 3]*100, 2), "% variance"),
+       y = paste0("PC4: ", signif(my_pc_importance[2, 4]*100, 2), "% variance"),
+       color = "group") +
+  theme_bw()
+   
+
+pca_34
+```
+```{r}
+pca_45 <- my_pca$x %>% 
+  as.data.frame() %>% 
+  cbind(my_data) %>% 
+  ggplot(aes(x = PC4, y = PC5)) +
+  geom_point(aes(color = as.factor(group)),
+             size = 1.5, alpha = 0.8) +
+  scale_color_manual(values = carto_pal(12, "Pastel")) +
+  labs(x = paste0("PC4: ", signif(my_pc_importance[2, 4]*100, 2), "% variance"),
+       y = paste0("PC5: ", signif(my_pc_importance[2, 5]*100, 2), "% variance"),
+       color = "group") +
+  theme_bw()
+   
+
+pca_45
+```
+
+# UMAP 
+```{r}
+my_umap <- umap(d = my_pca$x)
+```
+
+## Graph UMAP 
+```{r}
+UMAP_plot <- my_umap$layout %>% 
+  as.data.frame() %>% 
+  cbind(my_data) %>% 
+  ggplot(aes(x = V1, y = V2)) +
+  geom_point(aes(color = as.factor(group)),
+             size = 1.5, alpha = 0.8) +
+  scale_color_manual(values = carto_pal(12, "Pastel")) +
+  labs(x = "UMAP1",
+       y = "UMAP2",
+       color = "group") +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+UMAP_plot
+```
+
+# Assemble plot 
+```{r}
+wrap_plots(
+  heatmap_data2,
+  pca_12 +
+    labs(tag = "B"), 
+  pca_23 +
+    labs(tag = "C"),
+  pca_34 +
+    labs(tag = "D"), 
+  pca_45 +
+    labs(tag = "E"),
+  UMAP_plot +
+    labs(tag = "F"),
+  design = c("ABCF
+              ADEF"),
+  widths = c(0.7, 0.8, 0.8, 1),
+  guides = "collect"
+)
+
+ggsave("UMAP_pos_ctrl.svg", height = 3.5, width = 10)
+ggsave("UMAP_pos_ctrl.png", height = 3.5, width = 10)
+```
+
